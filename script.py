@@ -84,6 +84,31 @@ try:
 
     logging.info("Navigation to collection successful")
 
+    # Delete content
+
+    delete_content_button = WebDriverWait(driver, 10).until(
+        EC.element_to_be_clickable((By.LINK_TEXT, "Delete content"))
+    )
+    delete_content_button.click()
+
+    delete_all_button = WebDriverWait(driver, 10).until(
+        EC.element_to_be_clickable((By.LINK_TEXT, "Delete all"))
+    )
+    delete_all_button.click()
+
+    alert = WebDriverWait(driver, 10).until(EC.alert_is_present())
+    alert.accept()
+
+    alert = WebDriverWait(driver, 10).until(EC.alert_is_present())
+    alert.accept()
+
+    logging.info(f"Deleted all content.")
+
+    cancel_button = WebDriverWait(driver, 10).until(
+        EC.element_to_be_clickable((By.LINK_TEXT, "Cancel"))
+    )
+    cancel_button.click()
+
     album_dirs = [
         os.path.join(MAIN_DIR, d)
         for d in os.listdir(MAIN_DIR)
