@@ -1,7 +1,9 @@
 import os
 import random
 import time
+import logging
 import pyautogui
+from datetime import datetime
 from dotenv import load_dotenv
 from selenium import webdriver
 from selenium.webdriver.common.by import By
@@ -14,6 +16,19 @@ LOGIN_PASSWORD = os.getenv("LOGIN_PASSWORD")
 COLLECTION_NAME = os.getenv("COLLECTION")
 MAIN_DIR = os.getenv("MAIN_DIR")
 NUM_PHOTOS = int(os.getenv("NUMBER_OF_PHOTOS"))
+
+# Set up logging
+log_directory = "logs"
+timestamp = datetime.now().strftime("%Y%m%d_%H:%M")
+log_file_path = os.path.join(log_directory, f"upload_{timestamp}.log")
+os.makedirs(log_directory, exist_ok=True)
+
+logging.basicConfig(
+    filename=log_file_path,
+    level=logging.INFO,
+    format="%(asctime)s - %(levelname)s - %(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S",
+)
 
 # Initialize WebDriver
 driver = webdriver.Chrome()
@@ -48,7 +63,7 @@ try:
     WebDriverWait(driver, 10).until(
         EC.presence_of_element_located((By.ID, "mypage_order"))
     )
-    print("Login successful")
+    logging.info("Login successful")
 
     # Click on the 'Content Management' button
     content_management_button = WebDriverWait(driver, 10).until(
@@ -67,7 +82,7 @@ try:
     )
     collection_box.click()
 
-    print("Navigation to collection successful")
+    logging.info("Navigation to collection successful")
 
     album_dirs = [
         os.path.join(MAIN_DIR, d)
@@ -76,7 +91,7 @@ try:
     ]
 
     # Function to pick random album and random percentage
-    def pick_random_album_and_percentage():
+    def pick_random_album_and_percentage() -> tuple[str, int]:
         random_album = random.choice(album_dirs)
         album_dirs.remove(random_album)
         percentage = random.randint(40, 100)
@@ -107,12 +122,13 @@ try:
         # Pick a random album and percentage
         random_album, percentage = pick_random_album_and_percentage()
 
-        print("---------------------------------------")
-        print(f"Selected album: {random_album}, Percentage: {percentage}%")
+        logging.info("---------------------------------------")
+        album_name = random_album.split("/")[-1]
+        logging.info(f"Selected album: {album_name}, Percentage: {percentage}%")
 
         # Get random photos from the album based on the selected percentage
         file_paths = get_random_photos(random_album, percentage)
-        print(f"Selected {len(file_paths)} photos.")
+        logging.info(f"Selected {len(file_paths)} photos.")
 
         # Split file_paths into chunks of 30
         sublists = list(split_list_into_chunks(file_paths, 5))
@@ -164,14 +180,14 @@ try:
             )
 
         uploaded_photos_count += len(file_paths)
-        print("Total uploaded count: " + str(uploaded_photos_count))
+        logging.info("Total uploaded count: " + str(uploaded_photos_count))
 
-    print("=======================================")
-    print("Photos upload completed successfully.")
+    logging.info("=======================================")
+    logging.info("Photos upload completed successfully.")
 
 
 except Exception as e:
-    print("An error occurred:", e)
+    logging.error("An error occurred:", e)
 
 finally:
     # Close the browser after a delay (for testing purposes)
