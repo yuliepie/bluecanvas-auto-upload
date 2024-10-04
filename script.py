@@ -9,6 +9,9 @@ from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.chrome.service import Service as ChromeService
+from selenium.webdriver.chrome.options import Options
+from webdriver_manager.chrome import ChromeDriverManager
 
 load_dotenv()
 LOGIN_EMAIL = os.getenv("LOGIN_EMAIL")
@@ -18,6 +21,7 @@ MAIN_DIR = os.getenv("MAIN_DIR")
 NUM_PHOTOS = int(os.getenv("NUMBER_OF_PHOTOS"))
 
 # Set up logging
+log_format = "%(asctime)s - %(levelname)s - %(message)s"
 log_directory = "logs"
 timestamp = datetime.now().strftime("%Y%m%d_%H:%M")
 log_file_path = os.path.join(log_directory, f"upload_{timestamp}.log")
@@ -26,12 +30,33 @@ os.makedirs(log_directory, exist_ok=True)
 logging.basicConfig(
     filename=log_file_path,
     level=logging.INFO,
-    format="%(asctime)s - %(levelname)s - %(message)s",
+    format=log_format,
     datefmt="%Y-%m-%d %H:%M:%S",
 )
 
+# Also log to stdout
+console = logging.StreamHandler()
+console.setLevel(logging.DEBUG)
+formatter = logging.Formatter(log_format)
+console.setFormatter(formatter)
+logging.getLogger().addHandler(console)
+
+# Initialize WebDriver in headless mode
+chrome_options = Options()
+chrome_options.add_argument("--headless")
+chrome_options.add_argument("--no-sandbox")
+chrome_options.add_argument("--disable-dev-shm-usage")
+chrome_options.add_argument("--disable-gpu")
+chrome_options.add_argument("--window-size=1920x1080")
+
 # Initialize WebDriver
-driver = webdriver.Chrome()
+driver = webdriver.Chrome(
+    service=ChromeService(ChromeDriverManager().install()), options=chrome_options
+)
+
+logging.info("=======================================")
+logging.info("Starting upload process.")
+
 
 # Open the digital frame website
 driver.get("https://www.bluecanvas.com/Home")
@@ -159,6 +184,8 @@ try:
         sublists = list(split_list_into_chunks(file_paths, 5))
 
         # Loop through each file and upload one by one
+        sublist_index = 1
+        sublist_size = len(sublists)
         for sublist in sublists:
 
             # Upload photos
@@ -203,6 +230,8 @@ try:
             loading_spinner = WebDriverWait(driver, 600).until(
                 EC.invisibility_of_element_located((By.ID, "spinLoading"))
             )
+            logging.debug(f"Uploaded sublist ({sublist_index}/{sublist_size}).")
+            sublist_index += 1
 
         uploaded_photos_count += len(file_paths)
         logging.info("Total uploaded count: " + str(uploaded_photos_count))
